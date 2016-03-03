@@ -114,16 +114,16 @@ genetic.notification = function(pop, generation, stats, isFinished) {
 
 var config = {
 	iterations: 2000,
-	size: 250,
+	size: 100,
 	crossover: 0.8,
-	mutation: 0.1,
-	skip: 100
+	mutation: 0.02,
+	skip: 5
 }
 
 var userData = {
-	cards: 20,
-	sum: 85+16+17+18,
-	product: 4550*19*20
+	cards: 10,
+	sum: 36,
+	product: 360
 }
 
 // Evolve
