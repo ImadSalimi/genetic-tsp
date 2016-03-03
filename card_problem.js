@@ -5,6 +5,20 @@ genetic.optimize = Genetic.Optimize.Minimize;
 genetic.select1 = Genetic.Select1.Tournament3;
 genetic.select2 = Genetic.Select2.Tournament2;
 
+var config = {
+	iterations: 2000,
+	size: 100,
+	crossover: 0.8,
+	mutation: 0.02,
+	skip: 5
+}
+
+var userData = {
+	cards: 10,
+	sum: 36,
+	product: 360
+}
+
 genetic.seed = function() {
 	var entity = [];
 
@@ -111,20 +125,6 @@ genetic.notification = function(pop, generation, stats, isFinished) {
 	console.log("Generation", generation, "| Error:", pop[0].fitness);
 	this.print(pop[0].entity);
 };
-
-var config = {
-	iterations: 2000,
-	size: 100,
-	crossover: 0.8,
-	mutation: 0.02,
-	skip: 5
-}
-
-var userData = {
-	cards: 10,
-	sum: 36,
-	product: 360
-}
 
 // Evolve
 genetic.evolve(config, userData);
