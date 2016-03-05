@@ -13,7 +13,7 @@ genetic.select2 = Genetic.Select2.Tournament5;
 var config = {
 	iterations: 100000,
 	size: 100,
-	crossover: 0.8,
+	crossover: 0.9,
 	mutation: 0.02,
 	skip: 20
 };
@@ -22,7 +22,7 @@ var config = {
 var userData = {
 	randomCities: []
 };
-for (var i = 0; i < 200; i++) {
+for (var i = 0; i < 100; i++) {
 	userData.randomCities.push(new City());
 }
 
@@ -40,18 +40,18 @@ genetic.shuffleArray = function(a) {
     return a;
 };
 genetic.seed = function() {
-	var route = [];
 	return this.shuffleArray(userData['randomCities']);
 };
 
 // Swap two cities positions in the route
 genetic.mutate = function(route) {
-	var i = Math.floor(Math.random() * route.length) % Math.ceil(route.length / 2);
-	var j = route.length - i - 1;
-
-	var t = route[i];
-	route[i] = route[j];
-	route[j] = t;
+	// Select two random cities
+	var ca = Math.floor(Math.random() * route.length);
+	var cb = Math.floor(Math.random() * route.length);
+	// Swap their positions
+	var t = route[ca];
+	route[ca] = route[cb];
+	route[cb] = t;
 
 	return route;
 }
