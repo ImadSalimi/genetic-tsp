@@ -1,12 +1,14 @@
 {
   "name": "genetic-tsp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Using genetic algorithms to find optimal solutions for the traveling salesman problem",
   "repository": "https://github.com/ImadSalimi/genetic-tsp",
   "main": "tsp.js",
   "dependencies": {
+    "express": "^4.13.4",
     "genetic-js": "^0.1.14",
     "geolib": "^2.0.18",
+    "jade": "^1.11.0",
     "mongodb": "^2.1.7"
   },
   "devDependencies": {

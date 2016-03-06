@@ -7,40 +7,23 @@ var City = require('./lib/City');
 // Optimization method
 genetic.optimize = Genetic.Optimize.Minimize;
 // Selection methods
-genetic.select1 = Genetic.Select1.Tournament5;
-genetic.select2 = Genetic.Select2.Tournament5;
-
-var config = {
-	iterations: 100000,
-	size: 100,
-	crossover: 0.9,
-	mutation: 0.02,
-	skip: 20
-};
-
-// Create 20 random cities
-var userData = {
-	randomCities: []
-};
-for (var i = 0; i < 100; i++) {
-	userData.randomCities.push(new City());
-}
+genetic.select1 = Genetic.Select1.Tournament3;
+genetic.select2 = Genetic.Select2.FittestRandom;
 
 // Create a route from a defined number of random cities
 genetic.City = City.prototype;
 genetic.shuffleArray = function(a) {
-	a = JSON.parse(JSON.stringify(a));
-    var j, x, i;
-    for (i = a.length; i; i -= 1) {
-        j = Math.floor(Math.random() * i);
-        x = a[i - 1];
-        a[i - 1] = a[j];
-        a[j] = x;
-    }
-    return a;
+	var j, x, i;
+	for (i = a.length; i; i -= 1) {
+		j = Math.floor(Math.random() * i);
+		x = a[i - 1];
+		a[i - 1] = a[j];
+		a[j] = x;
+	}
+	return a;
 };
 genetic.seed = function() {
-	return this.shuffleArray(userData['randomCities']);
+	return this.shuffleArray(this.userData['randomCities']);
 };
 
 // Swap two cities positions in the route
@@ -88,10 +71,14 @@ genetic.crossover = function(mother, father) {
 
 	// Determine the crossover subset
 	var ca = Math.floor(Math.random() * mother.length);
-	var cb = Math.floor(Math.random() * mother.length);
-	if (ca > cb) {
-		var t = ca; ca = cb; cb = t;
-	}
+	var cb;
+	do {
+		cb = Math.floor(Math.random() * mother.length);
+		if (ca > cb) {
+			var t = ca; ca = cb; cb = t;
+		}
+	} while (cb == ca);
+
 	var son = ox(father, mother, ca, cb);
 	var daughter = ox(mother, father, ca, cb);
 
@@ -125,4 +112,10 @@ genetic.notification = function(pop, gen, stats, isFinished) {
 	console.log("Distance of best route: "+pop[0].fitness)
 }
 
-genetic.evolve(config, userData);
+// Export for node and the browser
+if (typeof module != 'undefined') {
+	module.exports = genetic;
+}
+if (typeof window != 'undefined') {
+	window.tsp = genetic;
+}

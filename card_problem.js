@@ -6,17 +6,17 @@ genetic.select1 = Genetic.Select1.Tournament3;
 genetic.select2 = Genetic.Select2.Tournament2;
 
 var config = {
-	iterations: 2000,
+	iterations: 100000,
 	size: 100,
-	crossover: 0.8,
+	crossover: 0.9,
 	mutation: 0.02,
 	skip: 5
 }
 
 var userData = {
-	cards: 10,
-	sum: 36,
-	product: 360
+	cards: 20,
+	sum: 36+11+12+13+14+15,
+	product: 360*16*17*18*19*20
 }
 
 genetic.seed = function() {
@@ -46,8 +46,8 @@ genetic.calculate = function(entity) {
 
 genetic.winCondition = function(entity) {
 	var _ = this.calculate(entity);
-	return Math.abs(_.sum - this.userData['sum']) < 2 &&
-			Math.abs(_.product - this.userData['product']) < 2;
+	return Math.abs(_.sum - this.userData['sum']) < 1 &&
+			Math.abs(_.product - this.userData['product']) < 1;
 }
 
 genetic.invalidConfiguration = function(entity) {

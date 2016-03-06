@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>GA: Traveling Saleman Problem</title>
+	<style>
+		#canvas {
+			border: 2px black solid;
+			margin-left: auto;
+			margin-right: auto;
+			display: block;
+		}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<button id="go" onclick="evolve()">Evolve</button>
+
+<script src="bundle.js"></script>
+<script>
+// Grab the canvas
+var canvas = document.getElementById('canvas');
+var width = 300;
+var height = 300;
+var offset = 20;
+canvas.width = width + offset;
+canvas.height = height + offset;
+var ctx = canvas.getContext('2d');
+
+// Redefine some genetic functions
+tsp.notification = function(pop, gen, stats, isFinished) {
+	drawCities(pop[0].entity, ctx, true);
+};
+
+function evolve() {
+	// Setup
+	var config = {
+		iterations: 100000,
+		size: 150,
+		crossover: 1,
+		mutation: 1,
+		skip: 20
+	}
+	var userData = {
+		randomCities: []
+	}
+	for (var i = 0; i < 30; i++) {
+		userData.randomCities.push(new tsp.City.constructor());
+	}
+
+	// Redefine the select2 operator
+	tsp.select2 = Genetic.Select2.FittestRandom;
+	tsp.evolve(config, userData);
+}
+
+function drawCities(cities, c, drawPath=false) {
+	// Clear the canvas
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	// Draw a dot for each city
+	var radius = 2;
+	cities.forEach(function(city, index) {
+		c.beginPath();
+		c.fillStyle = 'black';
+		c.arc(city.x, city.y, radius, 0, Math.PI * 2, false);
+		c.fill();
+		c.closePath();
+		// If we're drawing the path too
+		if (drawPath) {
+			c.strokeStyle = 'red';
+			c.lineWidth = 1;
+			c.beginPath();
+			c.moveTo(city.x, city.y);
+			// Since the path is close we handle that with a condition on the index
+			var next = (index == cities.length-1)? cities[0] : cities[index+1];
+			c.lineTo(next.x, next.y);
+			c.stroke();
+			c.closePath();
+		}
+	});
+}
+</script>
+</body>
+</html>
