@@ -7,7 +7,7 @@
  * @return {City}   An instance of the class
  */
 function City(x, y) {
-	var maxCoord = 300;
+	var maxCoord = 600;
 	// If x and y were provided
 	if (x !== undefined && y !== undefined) {
 		this.x = x;
@@ -43,6 +43,35 @@ module.exports = City;
 
 },{}],2:[function(require,module,exports){
 
+function deepEqual(one, another) {
+	if (one === another) return true;
+
+	if (typeof one == "object" && typeof another == "object") {
+		for (key in one) {
+			if (!(key in another)) return false;
+			if (!deepEqual(one[key], another[key])) return false;
+		}
+
+		for (key in another) {
+			if (!(key in one)) return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+// Export for node and the browser
+if (typeof module != 'undefined') {
+	module.exports = deepEqual;
+}
+if (typeof window != 'undefined') {
+	window.deepequal = deepEqual;
+}
+
+},{}],3:[function(require,module,exports){
+
 /**
  * Extending genetic-js
  *
@@ -69,6 +98,29 @@ Genetic.Select2.Tournament5 = function(pop) {
 	return [tournament5.call(this, pop), tournament5.call(this, pop)];
 }
 
+Genetic.Select2.RouletteWheel = function(pop) {
+	function wheelOut(r) {
+		// Loop through the population and sum fitnesses
+		var index, sum = 0;
+		for (var i = 0; i < pop.length; i++) {
+			sum += pop[i].fitness;
+			if (sum >= r) {
+				index = i;
+				break;
+			}
+		}
+		return index;
+	}
+
+	// Calculate the sum of the fitnesses
+	var F = pop.reduce(function(sum, route) { return sum + route.fitness; }, 0);
+
+	var route1 = pop[wheelOut(Math.random() * F)].entity;
+	var route2 = pop[wheelOut(Math.random() * F)].entity;
+
+	return [route1, route2];
+}
+
 // Export for node and the browser
 if (typeof module != 'undefined') {
 	module.exports = Genetic;
@@ -76,7 +128,7 @@ if (typeof module != 'undefined') {
 if (typeof window != 'undefined') {
 	window.Genetic = Genetic;
 }
-},{"genetic-js":3}],3:[function(require,module,exports){
+},{"genetic-js":4}],4:[function(require,module,exports){
 
 var Genetic = Genetic || (function(){
 	
@@ -245,6 +297,7 @@ var Genetic = Genetic || (function(){
 				
 				if (this.configuration.fittestAlwaysSurvives) // lets the best solution fall through
 					newPop.push(pop[0].entity);
+				newPop.push(self.mutate(pop[0].entity));
 				
 				while (newPop.length < self.configuration.size) {
 					if (
@@ -271,7 +324,6 @@ var Genetic = Genetic || (function(){
 				, "stats": stats
 				, "isFinished": isFinished
 			};
-			
 			
 			if (this.usingWebWorker) {
 				postMessage(response);
@@ -333,6 +385,9 @@ var Genetic = Genetic || (function(){
 				alert('ERROR: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);
 			};
 			worker.postMessage("");
+			if (typeof window != 'undefined') {
+				window.gaWorker = worker;
+			}
 		} else {
 			// simulate webworker
 			(function(){
@@ -360,46 +415,112 @@ if (typeof module != "undefined") {
 	module.exports = Genetic;
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // Load the genetic-js extension
 var Genetic = require('./lib/genetic-js-ext'),
 	genetic = Genetic.create();
 // Entities
 var City = require('./lib/City');
+// Helpers
+var deepEqual = require('./lib/deepequal');
 
 // Optimization method
-genetic.optimize = Genetic.Optimize.Minimize;
+genetic.optimize = Genetic.Optimize.Maximize;
 // Selection methods
 genetic.select1 = Genetic.Select1.Tournament3;
-genetic.select2 = Genetic.Select2.FittestRandom;
+genetic.select2 = Genetic.Select2.RouletteWheel;
 
-// Create a route from a defined number of random cities
+// Add some properties to the genetic object
 genetic.City = City.prototype;
-genetic.shuffleArray = function(a) {
-	var j, x, i;
-	for (i = a.length; i; i -= 1) {
-		j = Math.floor(Math.random() * i);
-		x = a[i - 1];
-		a[i - 1] = a[j];
-		a[j] = x;
+genetic.clone = Genetic.Clone;
+genetic.deepEqual = deepEqual;
+
+genetic.makeDistanceMatrix = function(cities) {
+	var mat = [],
+		n = cities.length;
+	for (var i = 0; i < n; i++) {
+		mat[i] = new Array(n);
+		for (var j = 0; j < n; j++) {
+			if (i == j) {
+				mat[i][j] = 0;
+			} else {
+				if (!mat[i][j]) {
+					mat[i][j] = this.City.distanceTo.call(cities[i], cities[j]);
+					mat[j] = mat[j] || new Array(n);
+					mat[j][i] = mat[i][j];
+				}
+			}
+		}
 	}
-	return a;
+	return mat;
+}
+/**
+ * Shuffles an array
+ * @param  {array} a : The array to be shuffled
+ * @return {array}   A shuffled copy of the array
+ */
+genetic.shuffleArray = function(a) {
+	var result = [];
+    while(a.length) {
+        var index = Math.floor(a.length * Math.random());
+        result.push(a[index]);
+        a.splice(index, 1);
+    }
+    return result;
 };
+/**
+ * Seeds a random route from the defined cities
+ * @return {array} A permutation of cities that represents the route
+ */
 genetic.seed = function() {
-	return this.shuffleArray(this.userData['randomCities']);
+	// The distances matrix
+	this.distances = this.distances ||
+				this.makeDistanceMatrix(this.userData['randomCities']);
+	// An array containing the indexes of the cities
+	this.cityIx = this.cityIx ||
+				this.userData['randomCities'].map(function(_, i) { return i; });
+	// Create a route by shuffling the indexes array
+	var route = this.shuffleArray(this.clone(this.cityIx));
+	return route;
 };
 
-// Swap two cities positions in the route
+/**
+ * Performs a series of 2-opt swaps that seeks a better solution
+ * @param  {array} route The route we're mutating
+ * @return {array}       A (hopefully) shorter route
+ */
 genetic.mutate = function(route) {
-	// Select two random cities
-	var ca = Math.floor(Math.random() * route.length);
-	var cb = Math.floor(Math.random() * route.length);
-	// Swap their positions
-	var t = route[ca];
-	route[ca] = route[cb];
-	route[cb] = t;
+	var self = this;
+	function swapCities(route, i, j) {
+		var res = self.clone(route);
+		var t = res[i];
+		res[i] = res[j];
+		res[j] = t;
 
-	return route;
+		return res;
+	}
+
+	function twoOptSwap(route, x, y) {
+		var newRoute = [];
+		for (var i = 0; i <= x-1; i++) newRoute.push(route[i]);
+		for (var i = y; i >= x; i--) newRoute.push(route[i]);
+		for (var i = y+1; i < route.length; i++) newRoute.push(route[i]);
+
+		return newRoute;
+	}
+
+	// Store a better route if it was found
+	var best = route;
+	for (var i = 0; i < route.length-1; i++) {
+		for (var j = i+1; j < route.length; j++) {
+			var t = twoOptSwap(route, i, j);
+			if (this.fitness(t) > this.fitness(route)) {
+				best = t;
+			}
+		}
+	}
+
+	return best;
 }
 
 // Ordered crossover
@@ -410,9 +531,10 @@ genetic.crossover = function(mother, father) {
 		var filtered = route2.filter(function(city) {
 			var found = false;
 			for (var i = ca; i <= cb; i++) {
-				var c = route1[i];
-				if (c.x == city.x && c.y == city.y)
+				if (route1[i] == city) {
 					found = true;
+					break;
+				}
 			}
 			return !found;
 		});
@@ -433,37 +555,38 @@ genetic.crossover = function(mother, father) {
 	}
 
 	// Determine the crossover subset
-	var ca = Math.floor(Math.random() * mother.length);
+	var ca = Math.floor(Math.random() * (mother.length-1));
 	var cb;
 	do {
 		cb = Math.floor(Math.random() * mother.length);
-		if (ca > cb) {
-			var t = ca; ca = cb; cb = t;
-		}
-	} while (cb == ca);
+	} while (cb <= ca);
 
 	var son = ox(father, mother, ca, cb);
 	var daughter = ox(mother, father, ca, cb);
+
+	// console.log([father, mother])
+	// console.log([son, daughter])
+	// console.log()
 
 	return [son, daughter];
 }
 
 /**
- * Calculates the fitness as the total distance of the route
- * @param  {array} entity The route we're evaluating
+ * Calculates the fitness as the inverse of the total distance of the route
+ * @param  {array} route : The route we're evaluating
  * @return {double}        The fitness score
  */
-genetic.fitness = function(entity) {
+genetic.fitness = function(route) {
 	var self = this;
-	var fitness = entity.reduce(function(distance, city, i) {
-		if (i == entity.length - 1) {
-			return distance + self.City.distanceTo.call(city, entity[0]);
+	var distance = route.reduce(function(distance, city, i) {
+		if (i == route.length - 1) {
+			return distance + self.distances[city][route[0]];
 		} else {
-			return distance + self.City.distanceTo.call(city, entity[i+1]);
+			return distance + self.distances[city][route[i+1]];
 		}
 	}, 0.0);
 
-	return fitness;
+	return 1 / distance;
 }
 
 genetic.generation = function(pop, generation, stats) {
@@ -472,7 +595,7 @@ genetic.generation = function(pop, generation, stats) {
 
 genetic.notification = function(pop, gen, stats, isFinished) {
 	console.log("Generation "+gen);
-	console.log("Distance of best route: "+pop[0].fitness)
+	console.log("Distance of best route: "+1/pop[0].fitness)
 }
 
 // Export for node and the browser
@@ -482,4 +605,4 @@ if (typeof module != 'undefined') {
 if (typeof window != 'undefined') {
 	window.tsp = genetic;
 }
-},{"./lib/City":1,"./lib/genetic-js-ext":2}]},{},[4]);
+},{"./lib/City":1,"./lib/deepequal":2,"./lib/genetic-js-ext":3}]},{},[5]);

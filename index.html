@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<link rel="stylesheet" href="./vendor/css/bootstrap.min.css">
 	<meta charset="UTF-8">
 	<title>GA: Traveling Saleman Problem</title>
+	<script src="./vendor/js/jquery-2.2.1.min.js"></script>
 	<style>
+		body {
+			margin-top: 50px;
+		}
 		#canvas {
 			border: 2px black solid;
 			margin-left: auto;
@@ -13,21 +18,46 @@
 	</style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
-<button id="go" onclick="evolve()">Evolve</button>
+
+<div class="container">
+	<h1 class="text-center">Genetic Algorithm: Traveling Salesman Problem</h1>
+	<canvas id="canvas"></canvas>
+	<div class="control-panel">
+		<button class="btn btn-success" id="go">Evolve</button>
+		<button class="btn btn-danger" id="stop">Stop</button>
+	</div>
+</div>
 
 <script src="bundle.js"></script>
 <script>
 // Grab the canvas
 var canvas = document.getElementById('canvas');
-var width = 300;
-var height = 300;
+var width = 600;
+var height = 600;
 var offset = 20;
 canvas.width = width + offset;
 canvas.height = height + offset;
 var ctx = canvas.getContext('2d');
 
+$('#go').click(function() {
+	if (typeof gaWorker != 'undefined')
+		alert("Stop the algorithm before you can go again");
+	else
+		evolve();
+});
+
+$('#stop').click(function() {
+	if (typeof gaWorker != 'undefined') {
+		gaWorker.terminate();
+		gaWorker = undefined;
+	}
+});
+
 // Redefine some genetic functions
+tsp.generation = function(pop, gen, stats) {
+	return true;
+}
+
 tsp.notification = function(pop, gen, stats, isFinished) {
 	drawCities(pop[0].entity, ctx, true);
 };
@@ -36,29 +66,32 @@ function evolve() {
 	// Setup
 	var config = {
 		iterations: 100000,
-		size: 150,
-		crossover: 1,
-		mutation: 1,
-		skip: 20
+		size: 100,
+		crossover: 0.9,
+		mutation: 0.015,
+		skip: 0
 	}
 	var userData = {
 		randomCities: []
 	}
-	for (var i = 0; i < 30; i++) {
+	for (var i = 0; i < 120; i++) {
 		userData.randomCities.push(new tsp.City.constructor());
 	}
 
 	// Redefine the select2 operator
+	tsp.select1 = Genetic.Select1.Tournament3;
 	tsp.select2 = Genetic.Select2.FittestRandom;
 	tsp.evolve(config, userData);
 }
 
-function drawCities(cities, c, drawPath=false) {
+function drawCities(route, c, drawPath=false) {
 	// Clear the canvas
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// Draw a dot for each city
 	var radius = 2;
-	cities.forEach(function(city, index) {
+	route.forEach(function(city, index) {
+		cities = tsp.userData.randomCities;
+		city = cities[city];
 		c.beginPath();
 		c.fillStyle = 'black';
 		c.arc(city.x, city.y, radius, 0, Math.PI * 2, false);
@@ -71,7 +104,8 @@ function drawCities(cities, c, drawPath=false) {
 			c.beginPath();
 			c.moveTo(city.x, city.y);
 			// Since the path is close we handle that with a condition on the index
-			var next = (index == cities.length-1)? cities[0] : cities[index+1];
+			var next = (index == route.length-1)? route[0] : route[index+1];
+			next = cities[next];
 			c.lineTo(next.x, next.y);
 			c.stroke();
 			c.closePath();
