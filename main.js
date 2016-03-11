@@ -11,19 +11,16 @@ var config = {
 var userData = {
 	randomCities: []
 };
-for (var i = 0; i < 10; i++) {
+for (var i = 0; i < 6; i++) {
 	userData.randomCities.push(new tsp.City.constructor());
 }
 
 
 tsp.userData = userData;
-console.log(tsp.userData)
 var a = tsp.seed();
 var b = tsp.seed();
-console.log(a, tsp.fitness(a))
-// var c = tsp.crossover(b, a);
-// console.log(c[0], c[1]);
-var d = tsp.mutate(a);
-console.log(d, tsp.fitness(d));
+console.log(a, b);
+var children = tsp.crossover(b, a);
+console.log(children[0], children[1]);
 
 // tsp.evolve(config, userData);

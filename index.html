@@ -6,14 +6,20 @@
 	<title>GA: Traveling Saleman Problem</title>
 	<script src="./vendor/js/jquery-2.2.1.min.js"></script>
 	<style>
-		body {
-			margin-top: 50px;
-		}
 		#canvas {
 			border: 2px black solid;
 			margin-left: auto;
 			margin-right: auto;
 			display: block;
+		}
+		#control-panel {
+			background: #ccc;
+			border: 2px dashed black;
+			box-sizing: border-box;
+			margin-left: auto;
+			margin-right: auto;
+			margin-bottom: 50px;
+			padding: 20px;
 		}
 	</style>
 </head>
@@ -21,10 +27,38 @@
 
 <div class="container">
 	<h1 class="text-center">Genetic Algorithm: Traveling Salesman Problem</h1>
-	<canvas id="canvas"></canvas>
-	<div class="control-panel">
-		<button class="btn btn-success" id="go">Evolve</button>
-		<button class="btn btn-danger" id="stop">Stop</button>
+		<div class="row">
+			<div class="col-sm-3">
+				<div id="control-panel">
+					<form class="form-horizontal">
+						<div class="form-group">
+							<label>Number of cities: </label>
+							<input type="text" class="form-control" id="nCities" value="50">
+						</div>
+						<div class="form-group">
+							<label>Population Size: </label>
+							<input type="text" class="form-control" id="popsize" value="30">
+						</div>
+						<div class="form-group">
+							<label>Crossover probability: </label>
+							<input type="text" class="form-control" id="pcx" value="0.9">
+						</div>
+						<div class="form-group">
+							<label>Mutation probability: </label>
+							<input type="text" class="form-control" id="pmut" value="0.02">
+						</div>
+					</form>
+					<button class="btn btn-success" id="go">Evolve</button>
+					<button class="btn btn-danger" id="stop">Stop</button>
+				</div>
+			</div>
+			<div class="col-sm-9">
+				<canvas id="canvas"></canvas>
+				<div id="progress-info">
+					<p class="text-center" id="generation"></p>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -32,8 +66,8 @@
 <script>
 // Grab the canvas
 var canvas = document.getElementById('canvas');
-var width = 600;
-var height = 600;
+var width = 500;
+var height = 500;
 var offset = 20;
 canvas.width = width + offset;
 canvas.height = height + offset;
@@ -59,6 +93,7 @@ tsp.generation = function(pop, gen, stats) {
 }
 
 tsp.notification = function(pop, gen, stats, isFinished) {
+	$('#generation').text('Generation ' + gen + ' | Best distance: ' + 1/pop[0].fitness);
 	drawCities(pop[0].entity, ctx, true);
 };
 
@@ -66,20 +101,20 @@ function evolve() {
 	// Setup
 	var config = {
 		iterations: 100000,
-		size: 100,
-		crossover: 0.9,
-		mutation: 0.015,
+		size: $('#popsize').val(),
+		crossover: $('#pcx').val(),
+		mutation: $('#pmut').val(),
 		skip: 0
 	}
 	var userData = {
 		randomCities: []
 	}
-	for (var i = 0; i < 120; i++) {
+	for (var i = 0; i < $('#nCities').val(); i++) {
 		userData.randomCities.push(new tsp.City.constructor());
 	}
 
 	// Redefine the select2 operator
-	tsp.select1 = Genetic.Select1.Tournament3;
+	tsp.select1 = Genetic.Select1.RouletteWheel;
 	tsp.select2 = Genetic.Select2.FittestRandom;
 	tsp.evolve(config, userData);
 }
